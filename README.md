@@ -7,81 +7,113 @@
 ![Next.js](https://img.shields.io/badge/Next.js-000?style=flat&logo=nextdotjs)
 ![BullMQ](https://img.shields.io/badge/BullMQ-FF0000?style=flat)
 ![Redis](https://img.shields.io/badge/Redis-DC382D?style=flat&logo=redis&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat&logo=docker&logoColor=white)
 
-> Think Flower for Celery — but for BullMQ. Beautiful, real-time, TypeScript-native.
+> Think of it as a production-grade alternative to Bull Board — with live WebSocket updates and a cleaner UI.
 
 ---
 
 ## Features
 
-- 📊 **Live dashboard** — all queues at a glance (waiting / active / completed / failed / delayed)
-- 🔴 **Real-time updates** — WebSocket push, no page refresh needed
-- ▶️ **Retry failed jobs** — one click, or retry all at once
-- 🗑️ **Delete jobs** — remove individual jobs or clean entire queues
-- 🔍 **Job detail** — inspect job data, result, error, attempts, timestamps, duration
-- ⏸️ **Pause / Resume** queues
-- 📈 **Health bar** — visual queue health per queue
-- 🔌 **Zero config** — connects to any Redis instance via `REDIS_URL`
+- **Live queue stats** — active, waiting, completed, failed job counts update in real time via WebSocket
+- **Job management** — inspect job data, logs, and errors; retry failed jobs with one click
+- **Queue overview** — monitor multiple queues from a single dashboard
+- **WebSocket streaming** — no polling; the dashboard pushes updates as jobs change state
+- **Docker ready** — `docker compose up` and you're running
 
----
+## Tech stack
 
-## Stack
+| Layer    | Technology                    |
+|----------|-------------------------------|
+| API      | NestJS 10, TypeScript         |
+| Queue    | BullMQ + Redis                |
+| Realtime | WebSocket gateway (NestJS)    |
+| Frontend | Next.js 14, Tailwind CSS      |
+| Infra    | Docker Compose                |
 
-| Layer | Tech |
-|---|---|
-| Backend | NestJS + TypeScript |
-| Queue engine | BullMQ + ioredis |
-| Real-time | Socket.io WebSockets |
-| Frontend | Next.js 15 + Tailwind CSS |
+## Project structure
 
----
+```
+taskpilot/
+├── backend/
+│   ├── src/
+│   │   ├── queues/       # Queue inspection & management
+│   │   ├── jobs/         # Job service (retry, remove)
+│   │   └── gateway/      # WebSocket live updates
+│   └── .env.example
+├── frontend/
+│   └── app/
+│       ├── dashboard/    # Main dashboard page
+│       └── queues/       # Per-queue detail view
+└── docker-compose.yml
+```
 
-## Quick Start
+## Quick start
 
 ### Prerequisites
-- Node.js 20+
-- Redis running locally
+
+- Docker + Docker Compose (recommended)
+- Or: Node.js 18+ and a running Redis instance
+
+### Option A — Docker Compose (easiest)
+
+```bash
+git clone https://github.com/DIYA73/taskpilot.git
+cd taskpilot
+docker compose up -d
+```
+
+Dashboard available at `http://localhost:3000`.
+
+### Option B — Local development
 
 ```bash
 git clone https://github.com/DIYA73/taskpilot.git
 cd taskpilot
 
-# Backend
-cd backend
-npm install
-cp .env.example .env
-# Edit .env → set REDIS_URL if not localhost
-npm run start:dev
-
-# Frontend (new terminal)
-cd ../frontend
-npm install
-npm run dev
+# Configure
+cp backend/.env.example backend/.env
+# Edit REDIS_URL in backend/.env
 ```
 
-Open [http://localhost:3000](http://localhost:3000)
-
----
-
-## Configuration
-
 ```env
-# backend/.env
 REDIS_URL=redis://localhost:6379
 PORT=3001
 ```
 
-TaskPilot auto-discovers all BullMQ queues in your Redis instance.
-
----
-
-## Docker Compose
-
 ```bash
-docker compose up --build
+# Install
+cd backend && npm install
+cd ../frontend && npm install
+
+# Run (two terminals)
+cd backend && npm run start:dev   # API on :3001
+cd frontend && npm run dev        # UI  on :3000
 ```
 
----
+## Connect your own queues
+
+TaskPilot connects to your existing Redis instance. Point `REDIS_URL` at the same Redis your application uses and TaskPilot will automatically discover all BullMQ queues.
+
+```env
+REDIS_URL=redis://your-redis-host:6379
+```
+
+No changes needed in your application code.
+
+## API
+
+```
+GET  /queues                  # list all queues with counts
+GET  /queues/:name/jobs       # jobs in a queue (with pagination)
+GET  /queues/:name/jobs/:id   # single job detail
+POST /queues/:name/jobs/:id/retry  # retry a failed job
+DELETE /queues/:name/jobs/:id      # remove a job
+```
+
+## Contributing
+
+Issues and PRs welcome.
 
 ## License
 
